@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException, File, UploadFile, Form, Depends
 from app.schemas import PostCreate, PostResponse, UserRead, UserCreate, UserUpdate
-from app.db import Post, create_db_and_tables, get_async_session, User
+from app.db import Post, create_db_and_tables, get_async_session, User, Likes
 from sqlalchemy.ext.asyncio import AsyncSession
 from contextlib import asynccontextmanager
 from sqlalchemy import select
@@ -116,7 +116,7 @@ async def delete_post(post_id: str, session: AsyncSession = Depends(get_async_se
         if not post:
             raise HTTPException(status_code=404, detail="Post not found")
         
-        if post.user_id != user.id:
+        if post.user_id != str(user.id):
             raise HTTPException(status_code=403, detail="You don't have permission to delete this post")
 
         await session.delete(post)
@@ -125,3 +125,13 @@ async def delete_post(post_id: str, session: AsyncSession = Depends(get_async_se
         return {"success": True, "message": "Post deleted successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+
+@app.post("/posts/{post_id}/like")
+async def like_post(post_id: str,
+                    user: User = Depends(current_active_user),
+                    session: AsyncSession = Depends(get_async_session)):
+    likes = Likes(user_id = str(user.id), post_id = post_id)
+    session.add(likes)
+    await session.commit()
+    await session.refresh(likes)

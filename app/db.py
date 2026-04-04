@@ -18,6 +18,7 @@ class Base(DeclarativeBase):
 
 class User(SQLAlchemyBaseUserTableUUID, Base):
     posts = relationship("Post", back_populates="user")
+    # likes = relationship("Likes", back_populates="user")
 
 class Post(Base):
     __tablename__ = "posts"
@@ -32,6 +33,14 @@ class Post(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="posts")
+
+class Likes(Base):
+    __tablename__ = "likes"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid_pkg.uuid4()))
+    user_id = Column(String, ForeignKey("user.id"), nullable=False)
+    post_id = Column(String, ForeignKey("posts.id"), nullable=False)
+
 
 engine = create_async_engine(DATABESE_URL)
 async_session_maker = async_sessionmaker(engine, expire_on_commit=False)
