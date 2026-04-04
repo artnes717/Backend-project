@@ -108,7 +108,7 @@ async def get_feed(
 async def delete_post(post_id: str, session: AsyncSession = Depends(get_async_session), 
     user: User = Depends(current_active_user) ):
     try:
-        post_uuid = uuid.UUID(post_id)
+        # post_uuid = uuid.UUID(post_id)
 
         result = await session.execute(select(Post).where(Post.id == post_id))
         post = result.scalars().first()
@@ -123,6 +123,7 @@ async def delete_post(post_id: str, session: AsyncSession = Depends(get_async_se
         await session.commit()
 
         return {"success": True, "message": "Post deleted successfully"}
+    
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
@@ -135,3 +136,28 @@ async def like_post(post_id: str,
     session.add(likes)
     await session.commit()
     await session.refresh(likes)
+
+
+@app.delete("/posts/{post_id}/like")
+async def delete_like(post_id: str,
+                        user: User = Depends(current_active_user),
+                        session: AsyncSession = Depends(get_async_session)):
+    try:
+        # post_uuid = uuid.UUID(post_id)
+
+        result = await session.execute(select(Likes).where(Likes.post_id == post_id))
+        like = result.scalars().first()
+
+        if not like:
+            raise HTTPException(status_code=404, detail="Like not found")
+
+        if (like.user_id != str(user.id)):
+            raise HTTPException(status_code=403, detail="You do not have permission to unlike this Post")
+
+        await session.delete(like)
+        await session.commit()
+
+        return {"success": True, "message": "Post unliked successfully"}
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
