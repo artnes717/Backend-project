@@ -3,7 +3,7 @@ from app.schemas import PostCreate, PostResponse, UserRead, UserCreate, UserUpda
 from app.db import Post, create_db_and_tables, get_async_session, User, Likes
 from sqlalchemy.ext.asyncio import AsyncSession
 from contextlib import asynccontextmanager
-from sqlalchemy import select
+from sqlalchemy import select, func
 from app.images import imagekit
 # from imagekitio.models.UploadFileRequestOptions import UploadFileRequestOptions
 # from imagekitio.UploadFileRequestOptions import UploadFileRequestOptions
@@ -87,6 +87,10 @@ async def get_feed(
 
     posts_data = []
     for post in posts:
+        
+        likes_result = await session.execute(select(func.count()).where(Likes.post_id == post.id))
+        likes_count = likes_result.scalar()
+
         posts_data.append(
             {
                 "id": str(post.id),
@@ -96,8 +100,8 @@ async def get_feed(
                 "file_type": post.file_type,
                 "file_name": post.file_name,
                 "created_at": post.created_at.isoformat(),
-                "is_owner": post.user_id == str(user.id)
-                # "email": post.user.email
+                "is_owner": post.user_id == str(user.id),
+                "like_amount": likes_count
             }
         )
     
