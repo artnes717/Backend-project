@@ -5,11 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from contextlib import asynccontextmanager
 from sqlalchemy import select, func, delete
 from app.images import imagekit
-# from imagekitio.models.UploadFileRequestOptions import UploadFileRequestOptions
-# from imagekitio.UploadFileRequestOptions import UploadFileRequestOptions
 import shutil
 import os
-import uuid
 import tempfile
 from app.users import auth_backend, current_active_user, fastapi_users
 
@@ -39,11 +36,6 @@ async def upload_file(
         with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file.filename)[1]) as temp_file:
             temp_file_path = temp_file.name
             shutil.copyfileobj(file.file, temp_file)
-        
-        options_dict = {
-            "use_unique_file_name": True,
-            "tags": ["backend-upload"]
-        }
 
         with open(temp_file_path, "rb") as f:
             file_data = f.read()
@@ -51,10 +43,8 @@ async def upload_file(
         upload_result = imagekit.files.upload(
             file=file_data,
             file_name=file.filename,
-            # options=options_dict
         )
 
-        # if upload_result.response_metadata.http_status_code == 200:
         post = Post(
             user_id = str(user.id),
             caption=caption,
@@ -115,7 +105,6 @@ async def get_feed(
 async def delete_post(post_id: str, session: AsyncSession = Depends(get_async_session), 
     user: User = Depends(current_active_user) ):
     try:
-        # post_uuid = uuid.UUID(post_id)
 
         result = await session.execute(select(Post).where(Post.id == post_id))
         post = result.scalars().first()
@@ -162,7 +151,6 @@ async def delete_like(post_id: str,
                         user: User = Depends(current_active_user),
                         session: AsyncSession = Depends(get_async_session)):
     try:
-        # post_uuid = uuid.UUID(post_id)
 
         result = await session.execute(select(Likes).where(Likes.post_id == post_id, Likes.user_id == str(user.id)))
         like = result.scalars().first()

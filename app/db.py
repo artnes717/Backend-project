@@ -1,9 +1,6 @@
 from collections.abc import AsyncGenerator 
-import uuid
 
 from sqlalchemy import Column, String, Text, DateTime, ForeignKey
-# from sqlalchemy.dialects.postgresql import UUID # ? 
-from sqlalchemy import Column, String, Text, DateTime
 import uuid as uuid_pkg
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase, relationship
@@ -18,12 +15,10 @@ class Base(DeclarativeBase):
 
 class User(SQLAlchemyBaseUserTableUUID, Base):
     posts = relationship("Post", back_populates="user")
-    # likes = relationship("Likes", back_populates="user")
 
 class Post(Base):
     __tablename__ = "posts"
 
-    # id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     id = Column(String, primary_key=True, default=lambda: str(uuid_pkg.uuid4()))
     user_id = Column(String, ForeignKey("user.id"), nullable=False)
     caption = Column(Text)
