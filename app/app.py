@@ -3,7 +3,7 @@ from app.schemas import PostCreate, PostResponse, UserRead, UserCreate, UserUpda
 from app.db import Post, create_db_and_tables, get_async_session, User, Likes
 from sqlalchemy.ext.asyncio import AsyncSession
 from contextlib import asynccontextmanager
-from sqlalchemy import select, func
+from sqlalchemy import select, func, delete
 from app.images import imagekit
 # from imagekitio.models.UploadFileRequestOptions import UploadFileRequestOptions
 # from imagekitio.UploadFileRequestOptions import UploadFileRequestOptions
@@ -87,9 +87,11 @@ async def get_feed(
 
     posts_data = []
     for post in posts:
-        
-        likes_result = await session.execute(select(func.count()).where(Likes.post_id == post.id))
+
+        likes_result = await session.execute(select(func.count()).select_from(Likes).where(Likes.post_id == post.id))
         likes_count = likes_result.scalar()
+        is_liked_result = await session.execute(select(Likes).where(Likes.user_id == str(user.id), Likes.post_id == post.id))
+        is_liked_result = is_liked_result.scalars().first()
 
         posts_data.append(
             {
@@ -101,7 +103,8 @@ async def get_feed(
                 "file_name": post.file_name,
                 "created_at": post.created_at.isoformat(),
                 "is_owner": post.user_id == str(user.id),
-                "like_amount": likes_count
+                "like_amount": likes_count,
+                "is_liked": is_liked_result is not None
             }
         )
     
@@ -123,11 +126,15 @@ async def delete_post(post_id: str, session: AsyncSession = Depends(get_async_se
         if post.user_id != str(user.id):
             raise HTTPException(status_code=403, detail="You don't have permission to delete this post")
 
+        await session.execute(delete(Likes).where(Likes.post_id == post_id))
+
         await session.delete(post)
         await session.commit()
 
         return {"success": True, "message": "Post deleted successfully"}
     
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
@@ -136,10 +143,18 @@ async def delete_post(post_id: str, session: AsyncSession = Depends(get_async_se
 async def like_post(post_id: str,
                     user: User = Depends(current_active_user),
                     session: AsyncSession = Depends(get_async_session)):
-    likes = Likes(user_id = str(user.id), post_id = post_id)
-    session.add(likes)
+    isliked = await session.execute(select(Likes).where(Likes.user_id == str(user.id), Likes.post_id == post_id))
+    like = isliked.scalars().first()
+
+    if like:
+        raise HTTPException(status_code=403, detail="Post already liked")
+    
+    new_like = Likes(user_id=str(user.id), post_id=post_id)
+    session.add(new_like)
     await session.commit()
-    await session.refresh(likes)
+    await session.refresh(new_like)
+    
+    return {"success": True, "message": "Post liked successfully"}
 
 
 @app.delete("/posts/{post_id}/like")
@@ -149,19 +164,18 @@ async def delete_like(post_id: str,
     try:
         # post_uuid = uuid.UUID(post_id)
 
-        result = await session.execute(select(Likes).where(Likes.post_id == post_id))
+        result = await session.execute(select(Likes).where(Likes.post_id == post_id, Likes.user_id == str(user.id)))
         like = result.scalars().first()
 
         if not like:
             raise HTTPException(status_code=404, detail="Like not found")
-
-        if (like.user_id != str(user.id)):
-            raise HTTPException(status_code=403, detail="You do not have permission to unlike this Post")
 
         await session.delete(like)
         await session.commit()
 
         return {"success": True, "message": "Post unliked successfully"}
     
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
