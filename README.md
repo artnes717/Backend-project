@@ -22,7 +22,7 @@ A RESTful backend API built with FastAPI that supports photo/video sharing with 
 
 ### 1. Clone the repo
 ```bash
-git clone https://github.com/YOUR_USERNAME/Backend-project.git
+git clone https://github.com/artnes717/Backend-project.git
 cd Backend-project
 ```
 
