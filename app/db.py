@@ -4,11 +4,11 @@ from sqlalchemy import Column, String, Text, DateTime, ForeignKey
 import uuid as uuid_pkg
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase, relationship
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi_users.db import SQLAlchemyUserDatabase, SQLAlchemyBaseUserTableUUID
 from fastapi import Depends
 
-DATABESE_URL = "sqlite+aiosqlite:///./test.db"
+DATABASE_URL = "sqlite+aiosqlite:///./test.db"
 
 class Base(DeclarativeBase):
     pass
@@ -25,7 +25,7 @@ class Post(Base):
     url = Column(String, nullable=False)
     file_type = Column(String, nullable=False)
     file_name = Column(String, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     user = relationship("User", back_populates="posts")
 
@@ -37,7 +37,7 @@ class Likes(Base):
     post_id = Column(String, ForeignKey("posts.id"), nullable=False)
 
 
-engine = create_async_engine(DATABESE_URL)
+engine = create_async_engine(DATABASE_URL)
 async_session_maker = async_sessionmaker(engine, expire_on_commit=False)
 
 

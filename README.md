@@ -41,7 +41,7 @@ JWT_SECRET=your_secret_key
 
 ### 4. Run the server
 ```bash
-uv run ./main.py
+
 ```
 
 API docs available at `http://localhost:8000/docs`
