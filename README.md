@@ -33,15 +33,23 @@ uv sync
 ```
 
 ### 3. Set up environment variables
-Create a `.env` file in the root:
+Create a `.env` file in the project root:
+
+```env
 IMAGEKIT_PRIVATE_KEY=your_private_key
 IMAGEKIT_PUBLIC_KEY=your_public_key
-IMAGEKIT_URL_ENDPOINT=https://ik.imagekit.io/your_id
+IMAGEKIT_URL=https://ik.imagekit.io/your_id
 JWT_SECRET=your_secret_key
+```
+
+Note: `JWT_SECRET` should be at least 32 characters. Generate one with:
+```bash
+python -c "import secrets; print(secrets.token_hex(32))"
+```
 
 ### 4. Run the server
 ```bash
-
+uv run ./main.py
 ```
 
-API docs available at `http://localhost:8000/docs`
+API docs available at `http://localhost:8000/docs`.
